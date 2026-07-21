@@ -9,6 +9,7 @@ class ApprovalRequest extends Model
 {
     use HasFactory;
 
+
     protected $fillable = [
         'user_id',
         'title',
@@ -19,11 +20,13 @@ class ApprovalRequest extends Model
         'rejected_at',
     ];
 
+
     protected $casts = [
         'submitted_at' => 'datetime',
         'approved_at' => 'datetime',
         'rejected_at' => 'datetime',
     ];
+
 
     /**
      * Request dimiliki oleh satu User
@@ -31,5 +34,14 @@ class ApprovalRequest extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+
+    /**
+     * Request memiliki banyak history approval
+     */
+    public function histories()
+    {
+        return $this->hasMany(ApprovalHistory::class);
     }
 }

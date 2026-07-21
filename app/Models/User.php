@@ -24,7 +24,6 @@ use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
 
     /**
@@ -44,5 +43,13 @@ class User extends Authenticatable
     public function approvalRequests()
     {
         return $this->hasMany(ApprovalRequest::class);
+    }
+
+    /**
+     * User memiliki banyak Approval History
+     */
+    public function approvalHistories()
+    {
+        return $this->hasMany(ApprovalHistory::class);
     }
 }
