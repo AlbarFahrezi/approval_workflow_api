@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -17,19 +16,19 @@ use Laravel\Sanctum\HasApiTokens;
     'password',
     'role',
 ])]
+
 #[Hidden([
     'password',
     'remember_token',
 ])]
+
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
 
     /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
+     * Attribute Casting
      */
     protected function casts(): array
     {
@@ -39,4 +38,11 @@ class User extends Authenticatable
         ];
     }
 
+    /**
+     * User memiliki banyak Approval Request
+     */
+    public function approvalRequests()
+    {
+        return $this->hasMany(ApprovalRequest::class);
+    }
 }
