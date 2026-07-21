@@ -13,13 +13,38 @@ class ApprovalRequestController extends Controller
     use ApiResponse;
 
     /**
-     * Menampilkan semua request milik user yang login
+     * Menampilkan daftar request berdasarkan role
      */
     public function index(Request $request)
     {
-        $approvalRequests = ApprovalRequest::where('user_id', $request->user()->id)
-            ->latest()
-            ->get();
+        $user = $request->user();
+
+        // Admin melihat semua request
+        if ($user->role === 'admin') {
+
+            $approvalRequests = ApprovalRequest::with('user')
+                ->latest()
+                ->get();
+
+        }
+        // Manager hanya melihat request yang menunggu approval
+        elseif ($user->role === 'manager') {
+
+            $approvalRequests = ApprovalRequest::with('user')
+                ->where('status', 'submitted')
+                ->latest()
+                ->get();
+
+        }
+        // Employee hanya melihat request miliknya
+        else {
+
+            $approvalRequests = ApprovalRequest::with('user')
+                ->where('user_id', $user->id)
+                ->latest()
+                ->get();
+
+        }
 
         return $this->success(
             'Data request berhasil diambil.',
@@ -53,7 +78,7 @@ class ApprovalRequestController extends Controller
     {
         return $this->success(
             'Detail request berhasil diambil.',
-            $approvalRequest
+            $approvalRequest->load('user')
         );
     }
 

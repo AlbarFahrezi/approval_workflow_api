@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\ApprovalRequestController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -27,7 +28,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/profile', [AuthController::class, 'profile']);
 
+    // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index']);
+
     /*
     |--------------------------------------------------------------------------
     | Approval Request CRUD
@@ -58,7 +61,6 @@ Route::middleware('auth:sanctum')->group(function () {
     |--------------------------------------------------------------------------
     */
 
-    // Melihat riwayat approval
     Route::get(
         '/approval-requests/{approvalRequest}/history',
         [ApprovalController::class, 'history']
@@ -72,17 +74,30 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::middleware('manager')->group(function () {
 
-        // Submitted -> Approved
         Route::post(
             '/approval-requests/{approvalRequest}/approve',
             [ApprovalController::class, 'approve']
         );
 
-        // Submitted -> Rejected
         Route::post(
             '/approval-requests/{approvalRequest}/reject',
             [ApprovalController::class, 'reject']
         );
+
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Admin User Management
+    |--------------------------------------------------------------------------
+    */
+
+    Route::middleware('admin')->group(function () {
+
+        Route::get('/users', [UserController::class, 'index']);
+        Route::get('/users/{user}', [UserController::class, 'show']);
+        Route::put('/users/{user}', [UserController::class, 'update']);
+        Route::delete('/users/{user}', [UserController::class, 'destroy']);
 
     });
 
