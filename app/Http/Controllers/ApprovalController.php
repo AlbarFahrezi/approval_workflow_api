@@ -114,19 +114,19 @@ class ApprovalController extends Controller
     }
 
     /**
-     * Menampilkan history approval
+     * Menampilkan timeline approval
      */
-    public function history(ApprovalRequest $approvalRequest)
+    public function timeline(ApprovalRequest $approvalRequest)
     {
-        $histories = $approvalRequest->histories()
+        $timeline = $approvalRequest->histories()
             ->with('user:id,name,email,role')
-            ->latest()
+            ->oldest()
             ->get();
 
         return response()->json([
             'success' => true,
-            'message' => 'History berhasil diambil.',
-            'data' => $histories,
+            'message' => 'Timeline approval berhasil diambil.',
+            'data' => $timeline,
         ]);
     }
 }

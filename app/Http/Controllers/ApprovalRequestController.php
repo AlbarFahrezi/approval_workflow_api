@@ -21,27 +21,83 @@ class ApprovalRequestController extends Controller
 
         $query = ApprovalRequest::with('user');
 
-        // Employee hanya melihat request miliknya
+        /*
+        |--------------------------------------------------------------------------
+        | Role Access
+        |--------------------------------------------------------------------------
+        */
+
         if ($user->role === 'employee') {
+
+            // Employee hanya melihat request miliknya
             $query->where('user_id', $user->id);
+
+        } elseif ($user->role === 'manager') {
+
+            // Manager hanya melihat request yang menunggu approval
+            $query->where('status', 'submitted');
+
         }
+        // Admin melihat semua request
 
-        // Manager & Admin melihat semua request
+        /*
+        |--------------------------------------------------------------------------
+        | Filter Status
+        |--------------------------------------------------------------------------
+        */
 
-        // Filter berdasarkan status
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
-        // Search berdasarkan title
+        /*
+        |--------------------------------------------------------------------------
+        | Search Title
+        |--------------------------------------------------------------------------
+        */
+
         if ($request->filled('search')) {
             $query->where('title', 'like', '%' . $request->search . '%');
         }
 
-        // Pagination
-        $approvalRequests = $query
-            ->latest()
-            ->paginate($request->get('per_page', 10));
+        /*
+        |--------------------------------------------------------------------------
+        | Filter User (Admin Only)
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            $user->role === 'admin' &&
+            $request->filled('user_id')
+        ) {
+            $query->where('user_id', $request->user_id);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Sorting
+        |--------------------------------------------------------------------------
+        */
+
+        if ($request->get('sort') === 'oldest') {
+
+            $query->oldest();
+
+        } else {
+
+            $query->latest();
+
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Pagination
+        |--------------------------------------------------------------------------
+        */
+
+        $approvalRequests = $query->paginate(
+            $request->get('per_page', 10)
+        );
 
         return $this->success(
             'Data request berhasil diambil.',
@@ -71,8 +127,22 @@ class ApprovalRequestController extends Controller
     /**
      * Detail request
      */
-    public function show(ApprovalRequest $approvalRequest)
+    public function show(Request $request, ApprovalRequest $approvalRequest)
     {
+        $user = $request->user();
+
+        // Employee hanya boleh melihat request miliknya
+        if (
+            $user->role === 'employee' &&
+            $approvalRequest->user_id !== $user->id
+        ) {
+            return $this->error(
+                'Anda tidak memiliki akses ke request ini.',
+                null,
+                403
+            );
+        }
+
         return $this->success(
             'Detail request berhasil diambil.',
             $approvalRequest->load('user')
@@ -92,6 +162,18 @@ class ApprovalRequestController extends Controller
             );
         }
 
+        // Employee hanya boleh mengedit request miliknya
+        if (
+            auth()->user()->role === 'employee' &&
+            $approvalRequest->user_id !== auth()->id()
+        ) {
+            return $this->error(
+                'Anda tidak memiliki akses.',
+                null,
+                403
+            );
+        }
+
         $approvalRequest->update([
             'title' => $request->title,
             'description' => $request->description,
@@ -106,11 +188,23 @@ class ApprovalRequestController extends Controller
     /**
      * Hapus request
      */
-    public function destroy(ApprovalRequest $approvalRequest)
+    public function destroy(Request $request, ApprovalRequest $approvalRequest)
     {
         if ($approvalRequest->status === 'approved') {
             return $this->error(
                 'Request yang sudah disetujui tidak dapat dihapus.',
+                null,
+                403
+            );
+        }
+
+        // Employee hanya boleh menghapus request miliknya
+        if (
+            $request->user()->role === 'employee' &&
+            $approvalRequest->user_id !== $request->user()->id
+        ) {
+            return $this->error(
+                'Anda tidak memiliki akses.',
                 null,
                 403
             );

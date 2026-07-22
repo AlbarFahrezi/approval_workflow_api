@@ -24,13 +24,23 @@ Route::post('/login', [AuthController::class, 'login']);
 
 Route::middleware('auth:sanctum')->group(function () {
 
-    // Authentication
+    /*
+    |--------------------------------------------------------------------------
+    | Authentication
+    |--------------------------------------------------------------------------
+    */
+
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/profile', [AuthController::class, 'profile']);
     Route::put('/profile', [AuthController::class, 'updateProfile']);
     Route::put('/change-password', [AuthController::class, 'changePassword']);
 
-    // Dashboard
+    /*
+    |--------------------------------------------------------------------------
+    | Dashboard
+    |--------------------------------------------------------------------------
+    */
+
     Route::get('/dashboard', [DashboardController::class, 'index']);
 
     /*
@@ -59,13 +69,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | History Workflow
+    | Approval Timeline
     |--------------------------------------------------------------------------
     */
 
     Route::get(
-        '/approval-requests/{approvalRequest}/history',
-        [ApprovalController::class, 'history']
+        '/approval-requests/{approvalRequest}/timeline',
+        [ApprovalController::class, 'timeline']
     );
 
     /*
@@ -76,11 +86,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::middleware('manager')->group(function () {
 
+        // Submitted -> Approved
         Route::post(
             '/approval-requests/{approvalRequest}/approve',
             [ApprovalController::class, 'approve']
         );
 
+        // Submitted -> Rejected
         Route::post(
             '/approval-requests/{approvalRequest}/reject',
             [ApprovalController::class, 'reject']
