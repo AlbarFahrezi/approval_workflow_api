@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ChangePasswordRequest;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
+use App\Http\Requests\UpdateProfileRequest;
 use App\Models\User;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
@@ -25,7 +27,7 @@ class AuthController extends Controller
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
-            'role' => $validated['role'] ?? 'employee',
+            'role' => 'employee', // Selalu employee saat register
         ]);
 
         $token = $user->createToken('auth_token')->plainTextToken;
@@ -86,6 +88,48 @@ class AuthController extends Controller
         return $this->success(
             'Data profile berhasil diambil.',
             $request->user()
+        );
+    }
+
+    /**
+     * Update Profile User
+     */
+    public function updateProfile(UpdateProfileRequest $request)
+    {
+        $user = $request->user();
+
+        $user->update([
+            'name' => $request->name,
+            'email' => $request->email,
+        ]);
+
+        return $this->success(
+            'Profile berhasil diperbarui.',
+            $user
+        );
+    }
+
+    /**
+     * Change Password User
+     */
+    public function changePassword(ChangePasswordRequest $request)
+    {
+        $user = $request->user();
+
+        if (!Hash::check($request->current_password, $user->password)) {
+            return $this->error(
+                'Password lama tidak sesuai.',
+                null,
+                400
+            );
+        }
+
+        $user->update([
+            'password' => Hash::make($request->password),
+        ]);
+
+        return $this->success(
+            'Password berhasil diperbarui.'
         );
     }
 }

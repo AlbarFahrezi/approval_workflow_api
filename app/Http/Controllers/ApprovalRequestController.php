@@ -19,32 +19,29 @@ class ApprovalRequestController extends Controller
     {
         $user = $request->user();
 
-        // Admin melihat semua request
-        if ($user->role === 'admin') {
+        $query = ApprovalRequest::with('user');
 
-            $approvalRequests = ApprovalRequest::with('user')
-                ->latest()
-                ->get();
-
-        }
-        // Manager hanya melihat request yang menunggu approval
-        elseif ($user->role === 'manager') {
-
-            $approvalRequests = ApprovalRequest::with('user')
-                ->where('status', 'submitted')
-                ->latest()
-                ->get();
-
-        }
         // Employee hanya melihat request miliknya
-        else {
-
-            $approvalRequests = ApprovalRequest::with('user')
-                ->where('user_id', $user->id)
-                ->latest()
-                ->get();
-
+        if ($user->role === 'employee') {
+            $query->where('user_id', $user->id);
         }
+
+        // Manager & Admin melihat semua request
+
+        // Filter berdasarkan status
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        // Search berdasarkan title
+        if ($request->filled('search')) {
+            $query->where('title', 'like', '%' . $request->search . '%');
+        }
+
+        // Pagination
+        $approvalRequests = $query
+            ->latest()
+            ->paginate($request->get('per_page', 10));
 
         return $this->success(
             'Data request berhasil diambil.',
