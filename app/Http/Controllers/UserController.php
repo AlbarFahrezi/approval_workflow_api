@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
 use App\Traits\ApiResponse;
+use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
@@ -20,6 +22,25 @@ class UserController extends Controller
         return $this->success(
             'Data user berhasil diambil.',
             $users
+        );
+    }
+
+    /**
+     * Membuat user baru (Admin)
+     */
+    public function store(StoreUserRequest $request)
+    {
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'role' => $request->role,
+        ]);
+
+        return $this->success(
+            'User berhasil dibuat.',
+            $user,
+            201
         );
     }
 
