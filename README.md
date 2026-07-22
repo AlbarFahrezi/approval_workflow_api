@@ -242,7 +242,7 @@ Project ini terdiri dari beberapa kelompok endpoint:
 Clone repository
 
 ```bash
-git clone https://github.com/USERNAME/approval-workflow-api.git
+git clone https://github.com/AlbarFahrezi/approval-workflow-api.git
 ```
 
 Masuk ke project
