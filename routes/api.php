@@ -68,15 +68,26 @@ Route::middleware('auth:sanctum')->group(function () {
     );
 
     /*
-    |--------------------------------------------------------------------------
-    | Approval Timeline
-    |--------------------------------------------------------------------------
-    */
+|--------------------------------------------------------------------------
+| Approval History
+|--------------------------------------------------------------------------
+*/
 
-    Route::get(
-        '/approval-requests/{approvalRequest}/timeline',
-        [ApprovalController::class, 'timeline']
-    );
+Route::get(
+    '/approval-requests/{approvalRequest}/history',
+    [ApprovalController::class, 'history']
+);
+
+/*
+|--------------------------------------------------------------------------
+| Approval Timeline
+|--------------------------------------------------------------------------
+*/
+
+Route::get(
+    '/approval-requests/{approvalRequest}/timeline',
+    [ApprovalController::class, 'timeline']
+);
 
     /*
     |--------------------------------------------------------------------------

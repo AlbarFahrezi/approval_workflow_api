@@ -5,11 +5,38 @@ namespace App\Http\Controllers;
 use App\Models\ApprovalRequest;
 use App\Models\User;
 
+
+/**
+ * @OA\Tag(
+ *     name="Dashboard",
+ *     description="Dashboard Summary API"
+ * )
+ */
 class DashboardController extends Controller
 {
     /**
      * Dashboard Summary
      */
+
+    /**
+ * @OA\Get(
+ *     path="/api/dashboard",
+ *     tags={"Dashboard"},
+ *     summary="Dashboard Summary",
+ *     description="Menampilkan ringkasan jumlah request berdasarkan status dan jumlah user.",
+ *     security={{"sanctum":{}}},
+ *
+ *     @OA\Response(
+ *         response=200,
+ *         description="Dashboard berhasil diambil"
+ *     ),
+ *
+ *     @OA\Response(
+ *         response=401,
+ *         description="Unauthorized"
+ *     )
+ * )
+ */
     public function index()
     {
         $totalRequests = ApprovalRequest::count();

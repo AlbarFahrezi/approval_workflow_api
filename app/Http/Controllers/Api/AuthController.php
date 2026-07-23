@@ -11,14 +11,43 @@ use App\Models\User;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use OpenApi\Annotations as OA;
 
+/**
+ * @OA\Tag(
+ *     name="Authentication",
+ *     description="Authentication API"
+ * )
+ */
 class AuthController extends Controller
 {
     use ApiResponse;
 
     /**
-     * Register User
-     */
+ * Register User
+ *
+ * @OA\Post(
+ *     path="/api/register",
+ *     tags={"Authentication"},
+ *     summary="Register User",
+ *
+ *     @OA\RequestBody(
+ *         required=true,
+ *         @OA\JsonContent(
+ *             required={"name","email","password","password_confirmation"},
+ *             @OA\Property(property="name", type="string", example="Albar"),
+ *             @OA\Property(property="email", type="string", example="albar@gmail.com"),
+ *             @OA\Property(property="password", type="string", example="password"),
+ *             @OA\Property(property="password_confirmation", type="string", example="password")
+ *         )
+ *     ),
+ *
+ *     @OA\Response(
+ *         response=201,
+ *         description="Register berhasil"
+ *     )
+ * )
+ */
     public function register(RegisterRequest $request)
     {
         $validated = $request->validated();
@@ -42,9 +71,29 @@ class AuthController extends Controller
         );
     }
 
-    /**
-     * Login User
-     */
+     /**
+ * Login User
+ *
+ * @OA\Post(
+ *     path="/api/login",
+ *     tags={"Authentication"},
+ *     summary="Login",
+ *
+ *     @OA\RequestBody(
+ *         required=true,
+ *         @OA\JsonContent(
+ *             required={"email","password"},
+ *             @OA\Property(property="email", type="string", example="employee@example.com"),
+ *             @OA\Property(property="password", type="string", example="password")
+ *         )
+ *     ),
+ *
+ *     @OA\Response(
+ *         response=200,
+ *         description="Login berhasil"
+ *     )
+ * )
+ */
     public function login(LoginRequest $request)
     {
         $validated = $request->validated();
@@ -71,8 +120,20 @@ class AuthController extends Controller
     }
 
     /**
-     * Logout User
-     */
+ * Logout User
+ *
+ * @OA\Post(
+ *     path="/api/logout",
+ *     tags={"Authentication"},
+ *     summary="Logout",
+ *     security={{"sanctum":{}}},
+ *
+ *     @OA\Response(
+ *         response=200,
+ *         description="Logout berhasil"
+ *     )
+ * )
+ */
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
@@ -80,9 +141,21 @@ class AuthController extends Controller
         return $this->success('Logout berhasil.');
     }
 
-    /**
-     * Profile User
-     */
+   /**
+ * Profile User
+ *
+ * @OA\Get(
+ *     path="/api/profile",
+ *     tags={"Authentication"},
+ *     summary="Profile",
+ *     security={{"sanctum":{}}},
+ *
+ *     @OA\Response(
+ *         response=200,
+ *         description="Profile berhasil"
+ *     )
+ * )
+ */
     public function profile(Request $request)
     {
         return $this->success(
@@ -92,8 +165,28 @@ class AuthController extends Controller
     }
 
     /**
-     * Update Profile User
-     */
+ * Update Profile User
+ *
+ * @OA\Put(
+ *     path="/api/profile",
+ *     tags={"Authentication"},
+ *     summary="Update Profile",
+ *     security={{"sanctum":{}}},
+ *
+ *     @OA\RequestBody(
+ *         required=true,
+ *         @OA\JsonContent(
+ *             @OA\Property(property="name", type="string"),
+ *             @OA\Property(property="email", type="string")
+ *         )
+ *     ),
+ *
+ *     @OA\Response(
+ *         response=200,
+ *         description="Profile berhasil diperbarui"
+ *     )
+ * )
+ */
     public function updateProfile(UpdateProfileRequest $request)
     {
         $user = $request->user();
@@ -110,8 +203,29 @@ class AuthController extends Controller
     }
 
     /**
-     * Change Password User
-     */
+ * Change Password User
+ *
+ * @OA\Put(
+ *     path="/api/change-password",
+ *     tags={"Authentication"},
+ *     summary="Change Password",
+ *     security={{"sanctum":{}}},
+ *
+ *     @OA\RequestBody(
+ *         required=true,
+ *         @OA\JsonContent(
+ *             @OA\Property(property="current_password", type="string"),
+ *             @OA\Property(property="password", type="string"),
+ *             @OA\Property(property="password_confirmation", type="string")
+ *         )
+ *     ),
+ *
+ *     @OA\Response(
+ *         response=200,
+ *         description="Password berhasil diperbarui"
+ *     )
+ * )
+ */
     public function changePassword(ChangePasswordRequest $request)
     {
         $user = $request->user();

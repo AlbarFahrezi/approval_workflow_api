@@ -8,6 +8,13 @@ use App\Models\ApprovalRequest;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 
+/**
+ * @OA\Tag(
+ *     name="Approval Requests",
+ *     description="Approval Request Management"
+ * )
+ */
+
 class ApprovalRequestController extends Controller
 {
     use ApiResponse;
@@ -15,6 +22,49 @@ class ApprovalRequestController extends Controller
     /**
      * Menampilkan daftar request berdasarkan role
      */
+
+    /**
+ * @OA\Get(
+ *     path="/api/approval-requests",
+ *     tags={"Approval Requests"},
+ *     summary="Get Approval Requests",
+ *     description="Menampilkan daftar approval request.",
+ *     security={{"sanctum":{}}},
+ *
+ *     @OA\Parameter(
+ *         name="status",
+ *         in="query",
+ *         description="Filter status",
+ *         @OA\Schema(type="string", example="submitted")
+ *     ),
+ *
+ *     @OA\Parameter(
+ *         name="search",
+ *         in="query",
+ *         description="Cari berdasarkan title",
+ *         @OA\Schema(type="string", example="Laptop")
+ *     ),
+ *
+ *     @OA\Parameter(
+ *         name="sort",
+ *         in="query",
+ *         description="Sorting data",
+ *         @OA\Schema(type="string", example="latest")
+ *     ),
+ *
+ *     @OA\Parameter(
+ *         name="per_page",
+ *         in="query",
+ *         description="Jumlah data per halaman",
+ *         @OA\Schema(type="integer", example=10)
+ *     ),
+ *
+ *     @OA\Response(
+ *         response=200,
+ *         description="Success"
+ *     )
+ * )
+ */
     public function index(Request $request)
     {
         $user = $request->user();
@@ -108,6 +158,30 @@ class ApprovalRequestController extends Controller
     /**
      * Membuat request baru
      */
+
+    /**
+ * @OA\Post(
+ *     path="/api/approval-requests",
+ *     tags={"Approval Requests"},
+ *     summary="Create Request",
+ *     security={{"sanctum":{}}},
+ *
+ *     @OA\RequestBody(
+ *         required=true,
+ *         @OA\JsonContent(
+ *             required={"title","description"},
+ *
+ *             @OA\Property(property="title", type="string", example="Pembelian Laptop"),
+ *             @OA\Property(property="description", type="string", example="Laptop untuk divisi IT")
+ *         )
+ *     ),
+ *
+ *     @OA\Response(
+ *         response=201,
+ *         description="Request berhasil dibuat"
+ *     )
+ * )
+ */
     public function store(StoreApprovalRequestRequest $request)
     {
         $approvalRequest = ApprovalRequest::create([
@@ -127,6 +201,27 @@ class ApprovalRequestController extends Controller
     /**
      * Detail request
      */
+
+    /**
+ * @OA\Get(
+ *     path="/api/approval-requests/{id}",
+ *     tags={"Approval Requests"},
+ *     summary="Detail Request",
+ *     security={{"sanctum":{}}},
+ *
+ *     @OA\Parameter(
+ *         name="id",
+ *         in="path",
+ *         required=true,
+ *         @OA\Schema(type="integer")
+ *     ),
+ *
+ *     @OA\Response(
+ *         response=200,
+ *         description="Success"
+ *     )
+ * )
+ */
     public function show(Request $request, ApprovalRequest $approvalRequest)
     {
         $user = $request->user();
@@ -152,6 +247,35 @@ class ApprovalRequestController extends Controller
     /**
      * Update request
      */
+
+    /**
+ * @OA\Put(
+ *     path="/api/approval-requests/{id}",
+ *     tags={"Approval Requests"},
+ *     summary="Update Request",
+ *     security={{"sanctum":{}}},
+ *
+ *     @OA\Parameter(
+ *         name="id",
+ *         in="path",
+ *         required=true,
+ *         @OA\Schema(type="integer")
+ *     ),
+ *
+ *     @OA\RequestBody(
+ *         required=true,
+ *         @OA\JsonContent(
+ *             @OA\Property(property="title", type="string"),
+ *             @OA\Property(property="description", type="string")
+ *         )
+ *     ),
+ *
+ *     @OA\Response(
+ *         response=200,
+ *         description="Updated"
+ *     )
+ * )
+ */
     public function update(UpdateApprovalRequestRequest $request, ApprovalRequest $approvalRequest)
     {
         if ($approvalRequest->status === 'approved') {
@@ -188,6 +312,27 @@ class ApprovalRequestController extends Controller
     /**
      * Hapus request
      */
+
+    /**
+ * @OA\Delete(
+ *     path="/api/approval-requests/{id}",
+ *     tags={"Approval Requests"},
+ *     summary="Delete Request",
+ *     security={{"sanctum":{}}},
+ *
+ *     @OA\Parameter(
+ *         name="id",
+ *         in="path",
+ *         required=true,
+ *         @OA\Schema(type="integer")
+ *     ),
+ *
+ *     @OA\Response(
+ *         response=200,
+ *         description="Deleted"
+ *     )
+ * )
+ */
     public function destroy(Request $request, ApprovalRequest $approvalRequest)
     {
         if ($approvalRequest->status === 'approved') {
