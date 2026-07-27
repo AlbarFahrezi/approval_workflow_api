@@ -1,0 +1,23 @@
+👤 Employee
+
+Employee adalah pembuat request.
+
+Authentication
+✅ Register
+✅ Login
+✅ Logout
+✅ Profile
+Approval Request
+✅ Membuat request (Draft)
+✅ Melihat seluruh request miliknya
+✅ Melihat detail request miliknya
+✅ Mengedit request (selama belum Approved)
+✅ Menghapus request (selama belum Approved)
+✅ Submit Request (Draft → Submitted)
+History
+✅ Melihat history request
+Tidak bisa
+❌ Approve request
+❌ Reject request
+❌ Dashboard Manager/Admin
+❌ Melihat request milik user lain (kalau sudah kita batasi)
