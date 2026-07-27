@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ApprovalActionRequest;
 use App\Models\ApprovalHistory;
 use App\Models\ApprovalRequest;
+use Illuminate\Http\Request;
 
 /**
  * @OA\Tag(
@@ -26,22 +27,15 @@ class ApprovalController extends Controller
      *     summary="Submit Request",
      *     description="Employee submit draft request menjadi submitted.",
      *     security={{"sanctum":{}}},
-     *
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
      *         @OA\Schema(type="integer", example=1)
      *     ),
-     *
      *     @OA\Response(
      *         response=200,
      *         description="Request berhasil disubmit"
-     *     ),
-     *
-     *     @OA\Response(
-     *         response=400,
-     *         description="Request sudah diproses"
      *     )
      * )
      */
@@ -81,14 +75,12 @@ class ApprovalController extends Controller
      *     summary="Approve Request",
      *     description="Manager menyetujui request.",
      *     security={{"sanctum":{}}},
-     *
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
      *         @OA\Schema(type="integer")
      *     ),
-     *
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
@@ -100,7 +92,6 @@ class ApprovalController extends Controller
      *             )
      *         )
      *     ),
-     *
      *     @OA\Response(
      *         response=200,
      *         description="Request berhasil diapprove"
@@ -145,14 +136,12 @@ class ApprovalController extends Controller
      *     summary="Reject Request",
      *     description="Manager menolak request.",
      *     security={{"sanctum":{}}},
-     *
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
      *         @OA\Schema(type="integer")
      *     ),
-     *
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
@@ -164,7 +153,6 @@ class ApprovalController extends Controller
      *             )
      *         )
      *     ),
-     *
      *     @OA\Response(
      *         response=200,
      *         description="Request berhasil direject"
@@ -209,14 +197,12 @@ class ApprovalController extends Controller
      *     summary="Approval History",
      *     description="Menampilkan seluruh riwayat approval request.",
      *     security={{"sanctum":{}}},
-     *
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
      *         @OA\Schema(type="integer", example=1)
      *     ),
-     *
      *     @OA\Response(
      *         response=200,
      *         description="History berhasil diambil"
@@ -225,15 +211,13 @@ class ApprovalController extends Controller
      */
     public function history(ApprovalRequest $approvalRequest)
     {
-        $history = $approvalRequest->histories()
-            ->with('user:id,name,email,role')
-            ->oldest()
-            ->get();
-
         return response()->json([
             'success' => true,
             'message' => 'History approval berhasil diambil.',
-            'data' => $history,
+            'data' => $approvalRequest->histories()
+                ->with('user:id,name,email,role')
+                ->oldest()
+                ->get(),
         ]);
     }
 
@@ -242,33 +226,42 @@ class ApprovalController extends Controller
      *     path="/api/approval-requests/{id}/timeline",
      *     tags={"Approval History"},
      *     summary="Approval Timeline",
-     *     description="Menampilkan timeline perubahan status approval request.",
+     *     description="Menampilkan timeline approval berdasarkan urutan waktu.",
      *     security={{"sanctum":{}}},
-     *
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
      *         required=true,
      *         @OA\Schema(type="integer", example=1)
      *     ),
-     *
+     *     @OA\Parameter(
+     *         name="sort",
+     *         in="query",
+     *         description="oldest atau latest",
+     *         @OA\Schema(type="string", example="latest")
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Timeline berhasil diambil"
      *     )
      * )
      */
-    public function timeline(ApprovalRequest $approvalRequest)
+    public function timeline(Request $request, ApprovalRequest $approvalRequest)
     {
-        $timeline = $approvalRequest->histories()
-            ->with('user:id,name,email,role')
-            ->oldest()
-            ->get();
+        $query = $approvalRequest->histories()
+            ->with('user:id,name,email,role');
+
+        if ($request->query('sort') === 'latest') {
+            $query->latest();
+        } else {
+            $query->oldest();
+        }
 
         return response()->json([
             'success' => true,
             'message' => 'Timeline approval berhasil diambil.',
-            'data' => $timeline,
+            'sort' => $request->query('sort', 'oldest'),
+            'data' => $query->get(),
         ]);
     }
 }

@@ -239,9 +239,6 @@
                 "responses": {
                     "200": {
                         "description": "Request berhasil disubmit"
-                    },
-                    "400": {
-                        "description": "Request sudah diproses"
                     }
                 },
                 "security": [
@@ -386,7 +383,7 @@
                     "Approval History"
                 ],
                 "summary": "Approval Timeline",
-                "description": "Menampilkan timeline perubahan status approval request.",
+                "description": "Menampilkan timeline approval berdasarkan urutan waktu.",
                 "operationId": "ee244db6c48a80415d92e23057fb171e",
                 "parameters": [
                     {
@@ -396,6 +393,15 @@
                         "schema": {
                             "type": "integer",
                             "example": 1
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "oldest atau latest",
+                        "schema": {
+                            "type": "string",
+                            "example": "latest"
                         }
                     }
                 ],
