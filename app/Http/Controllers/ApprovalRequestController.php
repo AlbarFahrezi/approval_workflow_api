@@ -68,86 +68,85 @@ class ApprovalRequestController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-
         $query = ApprovalRequest::with('user');
 
-        /*
-        |--------------------------------------------------------------------------
-        | Role Access
-        |--------------------------------------------------------------------------
-        */
+    /*
+    |--------------------------------------------------------------------------
+    | Role Access
+    |--------------------------------------------------------------------------
+    */
 
-        if ($user->role === 'employee') {
+    if ($user->role === 'employee') {
 
-            // Employee hanya melihat request miliknya
-            $query->where('user_id', $user->id);
+        // Employee hanya melihat request miliknya
+        $query->where('user_id', $user->id);
 
-        } elseif ($user->role === 'manager') {
+    } elseif ($user->role === 'manager') {
 
-            // Manager hanya melihat request yang menunggu approval
-            $query->where('status', 'submitted');
+        // Manager melihat request yang sudah disubmit
+        $query->where('status', 'submitted');
 
-        }
-        // Admin melihat semua request
+    }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Filter Status
-        |--------------------------------------------------------------------------
-        */
+    // Admin melihat semua request
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
+    /*
+    |--------------------------------------------------------------------------
+    | Filter Status
+    |--------------------------------------------------------------------------
+    */
 
-        /*
-        |--------------------------------------------------------------------------
-        | Search Title
-        |--------------------------------------------------------------------------
-        */
+    if ($request->filled('status') && $request->status !== 'all') {
+        $query->where('status', $request->status);
+    }
 
-        if ($request->filled('search')) {
-            $query->where('title', 'like', '%' . $request->search . '%');
-        }
+    /*
+    |--------------------------------------------------------------------------
+    | Search
+    |--------------------------------------------------------------------------
+    */
 
-        /*
-        |--------------------------------------------------------------------------
-        | Filter User (Admin Only)
-        |--------------------------------------------------------------------------
-        */
+    if ($request->filled('search')) {
+        $query->where(function ($q) use ($request) {
+            $q->where('title', 'like', '%' . $request->search . '%')
+              ->orWhere('description', 'like', '%' . $request->search . '%');
+        });
+    }
 
-        if (
-            $user->role === 'admin' &&
-            $request->filled('user_id')
-        ) {
-            $query->where('user_id', $request->user_id);
-        }
+    /*
+    |--------------------------------------------------------------------------
+    | Filter User (Admin)
+    |--------------------------------------------------------------------------
+    */
 
-        /*
-        |--------------------------------------------------------------------------
-        | Sorting
-        |--------------------------------------------------------------------------
-        */
+    if (
+        $user->role === 'admin' &&
+        $request->filled('user_id')
+    ) {
+        $query->where('user_id', $request->user_id);
+    }
 
-        if ($request->get('sort') === 'oldest') {
+    /*
+    |--------------------------------------------------------------------------
+    | Sorting
+    |--------------------------------------------------------------------------
+    */
 
-            $query->oldest();
+    if ($request->get('sort') === 'oldest') {
+        $query->oldest();
+    } else {
+        $query->latest();
+    }
 
-        } else {
+    /*
+    |--------------------------------------------------------------------------
+    | Pagination
+    |--------------------------------------------------------------------------
+    */
 
-            $query->latest();
-
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Pagination
-        |--------------------------------------------------------------------------
-        */
-
-        $approvalRequests = $query->paginate(
-            $request->get('per_page', 10)
-        );
+    $approvalRequests = $query->paginate(
+        $request->get('per_page', 10)
+    );
 
         return $this->success(
             'Data request berhasil diambil.',
