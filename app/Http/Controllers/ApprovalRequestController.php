@@ -84,7 +84,7 @@ class ApprovalRequestController extends Controller
     } elseif ($user->role === 'manager') {
 
         // Manager melihat request yang sudah disubmit
-        $query->where('status', 'submitted');
+        
 
     }
 
@@ -275,17 +275,30 @@ class ApprovalRequestController extends Controller
  *     )
  * )
  */
-    public function update(UpdateApprovalRequestRequest $request, ApprovalRequest $approvalRequest)
-    {
-        if ($approvalRequest->status === 'approved') {
+    public function update(
+        UpdateApprovalRequestRequest $request,
+        ApprovalRequest $approvalRequest
+    ) {
+        /*
+        |--------------------------------------------------------------------------
+        | Hanya Draft yang boleh diedit
+        |--------------------------------------------------------------------------
+        */
+
+        if ($approvalRequest->status !== 'draft') {
             return $this->error(
-                'Request yang sudah disetujui tidak dapat diedit.',
+                'Request yang sudah disubmit tidak dapat diedit.',
                 null,
                 403
             );
         }
 
-        // Employee hanya boleh mengedit request miliknya
+        /*
+        |--------------------------------------------------------------------------
+        | Employee hanya boleh mengedit request miliknya
+        |--------------------------------------------------------------------------
+        */
+
         if (
             auth()->user()->role === 'employee' &&
             $approvalRequest->user_id !== auth()->id()
@@ -296,6 +309,12 @@ class ApprovalRequestController extends Controller
                 403
             );
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Update Data
+        |--------------------------------------------------------------------------
+        */
 
         $approvalRequest->update([
             'title' => $request->title,
@@ -332,32 +351,51 @@ class ApprovalRequestController extends Controller
  *     )
  * )
  */
-    public function destroy(Request $request, ApprovalRequest $approvalRequest)
-    {
-        if ($approvalRequest->status === 'approved') {
-            return $this->error(
-                'Request yang sudah disetujui tidak dapat dihapus.',
-                null,
-                403
-            );
-        }
+   public function destroy(
+    Request $request,
+    ApprovalRequest $approvalRequest
+) {
+    /*
+    |--------------------------------------------------------------------------
+    | Hanya Draft yang boleh dihapus
+    |--------------------------------------------------------------------------
+    */
 
-        // Employee hanya boleh menghapus request miliknya
-        if (
-            $request->user()->role === 'employee' &&
-            $approvalRequest->user_id !== $request->user()->id
-        ) {
-            return $this->error(
-                'Anda tidak memiliki akses.',
-                null,
-                403
-            );
-        }
-
-        $approvalRequest->delete();
-
-        return $this->success(
-            'Request berhasil dihapus.'
+    if ($approvalRequest->status !== 'draft') {
+        return $this->error(
+            'Request yang sudah disubmit tidak dapat dihapus.',
+            null,
+            403
         );
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Employee hanya boleh menghapus request miliknya
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        $request->user()->role === 'employee' &&
+        $approvalRequest->user_id !== $request->user()->id
+    ) {
+        return $this->error(
+            'Anda tidak memiliki akses ke request ini.',
+            null,
+            403
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Delete Request
+    |--------------------------------------------------------------------------
+    */
+
+    $approvalRequest->delete();
+
+    return $this->success(
+        'Request berhasil dihapus.'
+    );
+}
 }
