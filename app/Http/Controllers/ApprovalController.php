@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ApprovalActionRequest;
 use App\Models\ApprovalHistory;
 use App\Models\ApprovalRequest;
+use App\Models\User;
+use App\Notifications\ApprovalRequestNotification;
 use Illuminate\Http\Request;
 
 /**
@@ -21,23 +23,9 @@ use Illuminate\Http\Request;
 class ApprovalController extends Controller
 {
     /**
-     * @OA\Post(
-     *     path="/api/approval-requests/{id}/submit",
-     *     tags={"Approval Workflow"},
-     *     summary="Submit Request",
-     *     description="Employee submit draft request menjadi submitted.",
-     *     security={{"sanctum":{}}},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         required=true,
-     *         @OA\Schema(type="integer", example=1)
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Request berhasil disubmit"
-     *     )
-     * )
+     * Submit Request
+     *
+     * Draft -> Submitted
      */
     public function submit(ApprovalRequest $approvalRequest)
     {
@@ -54,6 +42,12 @@ class ApprovalController extends Controller
             'submitted_at' => now(),
         ]);
 
+        /*
+        |--------------------------------------------------------------------------
+        | Approval History
+        |--------------------------------------------------------------------------
+        */
+
         ApprovalHistory::create([
             'approval_request_id' => $approvalRequest->id,
             'user_id' => auth()->id(),
@@ -62,6 +56,23 @@ class ApprovalController extends Controller
             'comment' => 'Request submitted',
         ]);
 
+        /*
+        |--------------------------------------------------------------------------
+        | Notification ke Manager
+        |--------------------------------------------------------------------------
+        */
+
+        $managers = User::where('role', 'manager')->get();
+
+        foreach ($managers as $manager) {
+            $manager->notify(
+                new ApprovalRequestNotification(
+                    $approvalRequest,
+                    'Pengajuan "' . $approvalRequest->title . '" menunggu persetujuan Anda.'
+                )
+            );
+        }
+
         return response()->json([
             'message' => 'Request berhasil disubmit.',
             'data' => $approvalRequest
@@ -69,34 +80,9 @@ class ApprovalController extends Controller
     }
 
     /**
-     * @OA\Post(
-     *     path="/api/approval-requests/{id}/approve",
-     *     tags={"Approval Workflow"},
-     *     summary="Approve Request",
-     *     description="Manager menyetujui request.",
-     *     security={{"sanctum":{}}},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             required={"comment"},
-     *             @OA\Property(
-     *                 property="comment",
-     *                 type="string",
-     *                 example="Request disetujui."
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Request berhasil diapprove"
-     *     )
-     * )
+     * Approve Request
+     *
+     * Submitted -> Approved
      */
     public function approve(
         ApprovalActionRequest $request,
@@ -115,6 +101,12 @@ class ApprovalController extends Controller
             'approved_at' => now(),
         ]);
 
+        /*
+        |--------------------------------------------------------------------------
+        | Approval History
+        |--------------------------------------------------------------------------
+        */
+
         ApprovalHistory::create([
             'approval_request_id' => $approvalRequest->id,
             'user_id' => auth()->id(),
@@ -123,6 +115,23 @@ class ApprovalController extends Controller
             'comment' => $request->comment,
         ]);
 
+        /*
+        |--------------------------------------------------------------------------
+        | Notification ke Employee
+        |--------------------------------------------------------------------------
+        */
+
+        $employee = User::find($approvalRequest->user_id);
+
+        if ($employee) {
+            $employee->notify(
+                new ApprovalRequestNotification(
+                    $approvalRequest,
+                    'Pengajuan "' . $approvalRequest->title . '" telah disetujui oleh Manager.'
+                )
+            );
+        }
+
         return response()->json([
             'message' => 'Request berhasil di-approve.',
             'data' => $approvalRequest,
@@ -130,34 +139,9 @@ class ApprovalController extends Controller
     }
 
     /**
-     * @OA\Post(
-     *     path="/api/approval-requests/{id}/reject",
-     *     tags={"Approval Workflow"},
-     *     summary="Reject Request",
-     *     description="Manager menolak request.",
-     *     security={{"sanctum":{}}},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             required={"comment"},
-     *             @OA\Property(
-     *                 property="comment",
-     *                 type="string",
-     *                 example="Budget belum tersedia."
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Request berhasil direject"
-     *     )
-     * )
+     * Reject Request
+     *
+     * Submitted -> Rejected
      */
     public function reject(
         ApprovalActionRequest $request,
@@ -176,6 +160,12 @@ class ApprovalController extends Controller
             'rejected_at' => now(),
         ]);
 
+        /*
+        |--------------------------------------------------------------------------
+        | Approval History
+        |--------------------------------------------------------------------------
+        */
+
         ApprovalHistory::create([
             'approval_request_id' => $approvalRequest->id,
             'user_id' => auth()->id(),
@@ -184,6 +174,23 @@ class ApprovalController extends Controller
             'comment' => $request->comment,
         ]);
 
+        /*
+        |--------------------------------------------------------------------------
+        | Notification ke Employee
+        |--------------------------------------------------------------------------
+        */
+
+        $employee = User::find($approvalRequest->user_id);
+
+        if ($employee) {
+            $employee->notify(
+                new ApprovalRequestNotification(
+                    $approvalRequest,
+                    'Pengajuan "' . $approvalRequest->title . '" ditolak oleh Manager. Alasan: ' . $request->comment
+                )
+            );
+        }
+
         return response()->json([
             'message' => 'Request berhasil di-reject.',
             'data' => $approvalRequest,
@@ -191,23 +198,7 @@ class ApprovalController extends Controller
     }
 
     /**
-     * @OA\Get(
-     *     path="/api/approval-requests/{id}/history",
-     *     tags={"Approval History"},
-     *     summary="Approval History",
-     *     description="Menampilkan seluruh riwayat approval request.",
-     *     security={{"sanctum":{}}},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         required=true,
-     *         @OA\Schema(type="integer", example=1)
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="History berhasil diambil"
-     *     )
-     * )
+     * Approval History
      */
     public function history(ApprovalRequest $approvalRequest)
     {
@@ -222,32 +213,12 @@ class ApprovalController extends Controller
     }
 
     /**
-     * @OA\Get(
-     *     path="/api/approval-requests/{id}/timeline",
-     *     tags={"Approval History"},
-     *     summary="Approval Timeline",
-     *     description="Menampilkan timeline approval berdasarkan urutan waktu.",
-     *     security={{"sanctum":{}}},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         required=true,
-     *         @OA\Schema(type="integer", example=1)
-     *     ),
-     *     @OA\Parameter(
-     *         name="sort",
-     *         in="query",
-     *         description="oldest atau latest",
-     *         @OA\Schema(type="string", example="latest")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Timeline berhasil diambil"
-     *     )
-     * )
+     * Approval Timeline
      */
-    public function timeline(Request $request, ApprovalRequest $approvalRequest)
-    {
+    public function timeline(
+        Request $request,
+        ApprovalRequest $approvalRequest
+    ) {
         $query = $approvalRequest->histories()
             ->with('user:id,name,email,role');
 

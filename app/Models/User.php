@@ -15,6 +15,7 @@ use Laravel\Sanctum\HasApiTokens;
     'email',
     'password',
     'role',
+    'avatar',
 ])]
 
 #[Hidden([
@@ -38,7 +39,7 @@ class User extends Authenticatable
     }
 
     /**
-     * User memiliki banyak Approval Request
+     * User memiliki banyak Approval Request.
      */
     public function approvalRequests()
     {
@@ -46,7 +47,7 @@ class User extends Authenticatable
     }
 
     /**
-     * User memiliki banyak Approval History
+     * User memiliki banyak Approval History.
      */
     public function approvalHistories()
     {

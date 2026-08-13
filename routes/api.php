@@ -5,6 +5,7 @@ use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\ApprovalRequestController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -31,9 +32,15 @@ Route::middleware('auth:sanctum')->group(function () {
     */
 
     Route::post('/logout', [AuthController::class, 'logout']);
+
     Route::get('/profile', [AuthController::class, 'profile']);
-    Route::put('/profile', [AuthController::class, 'updateProfile']);
-    Route::put('/change-password', [AuthController::class, 'changePassword']);
+
+    Route::post('/profile', [AuthController::class, 'updateProfile']);
+
+    Route::put(
+        '/profile/password',
+        [AuthController::class, 'changePassword']
+    );
 
     /*
     |--------------------------------------------------------------------------
@@ -41,7 +48,10 @@ Route::middleware('auth:sanctum')->group(function () {
     |--------------------------------------------------------------------------
     */
 
-    Route::get('/dashboard', [DashboardController::class, 'index']);
+    Route::get(
+        '/dashboard',
+        [DashboardController::class, 'index']
+    );
 
     /*
     |--------------------------------------------------------------------------
@@ -49,11 +59,30 @@ Route::middleware('auth:sanctum')->group(function () {
     |--------------------------------------------------------------------------
     */
 
-    Route::get('/approval-requests', [ApprovalRequestController::class, 'index']);
-    Route::post('/approval-requests', [ApprovalRequestController::class, 'store']);
-    Route::get('/approval-requests/{approvalRequest}', [ApprovalRequestController::class, 'show']);
-    Route::put('/approval-requests/{approvalRequest}', [ApprovalRequestController::class, 'update']);
-    Route::delete('/approval-requests/{approvalRequest}', [ApprovalRequestController::class, 'destroy']);
+    Route::get(
+        '/approval-requests',
+        [ApprovalRequestController::class, 'index']
+    );
+
+    Route::post(
+        '/approval-requests',
+        [ApprovalRequestController::class, 'store']
+    );
+
+    Route::get(
+        '/approval-requests/{approvalRequest}',
+        [ApprovalRequestController::class, 'show']
+    );
+
+    Route::put(
+        '/approval-requests/{approvalRequest}',
+        [ApprovalRequestController::class, 'update']
+    );
+
+    Route::delete(
+        '/approval-requests/{approvalRequest}',
+        [ApprovalRequestController::class, 'destroy']
+    );
 
     /*
     |--------------------------------------------------------------------------
@@ -68,26 +97,26 @@ Route::middleware('auth:sanctum')->group(function () {
     );
 
     /*
-|--------------------------------------------------------------------------
-| Approval History
-|--------------------------------------------------------------------------
-*/
+    |--------------------------------------------------------------------------
+    | Approval History
+    |--------------------------------------------------------------------------
+    */
 
-Route::get(
-    '/approval-requests/{approvalRequest}/history',
-    [ApprovalController::class, 'history']
-);
+    Route::get(
+        '/approval-requests/{approvalRequest}/history',
+        [ApprovalController::class, 'history']
+    );
 
-/*
-|--------------------------------------------------------------------------
-| Approval Timeline
-|--------------------------------------------------------------------------
-*/
+    /*
+    |--------------------------------------------------------------------------
+    | Approval Timeline
+    |--------------------------------------------------------------------------
+    */
 
-Route::get(
-    '/approval-requests/{approvalRequest}/timeline',
-    [ApprovalController::class, 'timeline']
-);
+    Route::get(
+        '/approval-requests/{approvalRequest}/timeline',
+        [ApprovalController::class, 'timeline']
+    );
 
     /*
     |--------------------------------------------------------------------------
@@ -108,7 +137,6 @@ Route::get(
             '/approval-requests/{approvalRequest}/reject',
             [ApprovalController::class, 'reject']
         );
-
     });
 
     /*
@@ -119,12 +147,103 @@ Route::get(
 
     Route::middleware('admin')->group(function () {
 
-        Route::get('/users', [UserController::class, 'index']);
-        Route::post('/users', [UserController::class, 'store']);
-        Route::get('/users/{user}', [UserController::class, 'show']);
-        Route::put('/users/{user}', [UserController::class, 'update']);
-        Route::delete('/users/{user}', [UserController::class, 'destroy']);
+        Route::get(
+            '/users',
+            [UserController::class, 'index']
+        );
 
+        Route::post(
+            '/users',
+            [UserController::class, 'store']
+        );
+
+        Route::get(
+            '/users/{user}',
+            [UserController::class, 'show']
+        );
+
+        Route::put(
+            '/users/{user}',
+            [UserController::class, 'update']
+        );
+
+        Route::delete(
+            '/users/{user}',
+            [UserController::class, 'destroy']
+        );
     });
 
+    /*
+    |--------------------------------------------------------------------------
+    | Notifications
+    |--------------------------------------------------------------------------
+    */
+
+    // Semua notifikasi user yang sedang login
+    Route::get('/notifications', function (Request $request) {
+
+        return response()->json([
+            'success' => true,
+            'data' => $request->user()
+                ->notifications()
+                ->latest()
+                ->get(),
+        ]);
+    });
+
+    // Notifikasi yang belum dibaca
+    Route::get('/notifications/unread', function (Request $request) {
+
+        return response()->json([
+            'success' => true,
+            'data' => $request->user()
+                ->unreadNotifications()
+                ->latest()
+                ->get(),
+        ]);
+    });
+
+    // Tandai satu notifikasi sebagai dibaca
+    Route::post('/notifications/{id}/read', function (
+        Request $request,
+        string $id
+    ) {
+
+        $notification = $request->user()
+            ->notifications()
+            ->where('id', $id)
+            ->first();
+
+        if (!$notification) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Notifikasi tidak ditemukan.',
+            ], 404);
+        }
+
+        $notification->markAsRead();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Notifikasi berhasil dibaca.',
+        ]);
+    });
+
+    // Tandai semua notifikasi sebagai dibaca
+    Route::post('/notifications/read-all', function (
+        Request $request
+    ) {
+
+        $request->user()
+            ->unreadNotifications()
+            ->get()
+            ->each(function ($notification) {
+                $notification->markAsRead();
+            });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Semua notifikasi berhasil dibaca.',
+        ]);
+    });
 });
