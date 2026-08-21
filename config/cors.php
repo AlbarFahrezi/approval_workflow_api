@@ -12,10 +12,8 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => [
-        'https://approval-workflow-frontend.vercel.app',
-        'https://approval-workflow-frontend-q9qf.vercel.app',
-    ],
+    // Mengizinkan semua origin (termasuk domain bawaan Vercel yang suka berubah)
+    'allowed_origins' => ['*'],
 
     'allowed_origins_patterns' => [],
 
@@ -25,6 +23,7 @@ return [
 
     'max_age' => 0,
 
-    'supports_credentials' => true,
+    // Wajib set ke false kalau allowed_origins menggunakan wildcard ['*']
+    'supports_credentials' => false,
 
 ];
