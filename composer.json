@@ -7,7 +7,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
-        "darkaonline/l5-swagger": "^11.1",
+        "darkaonline/l5-swagger": "^8.6 || ^11.0",
         "dedoc/scramble": "^0.13.35",
         "laravel/framework": "^11.0",
         "laravel/sanctum": "^4.0",
@@ -45,6 +45,9 @@
         "preferred-install": "dist",
         "sort-packages": true,
         "platform-check": false,
+        "audit": {
+            "block-insecure": false
+        },
         "allow-plugins": {
             "pestphp/pest-plugin": true,
             "php-http/discovery": true
