@@ -31,12 +31,14 @@ class UpdateProfileRequest extends FormRequest
                 'required',
                 'email',
                 'max:255',
-                Rule::unique('users')->ignore($this->user()->id),
+                Rule::unique('users')->ignore(
+                    $this->user()?->id
+                ),
             ],
 
             'avatar' => [
                 'nullable',
-                'image',
+                'file',
                 'mimes:jpg,jpeg,png,webp',
                 'max:2048',
             ],
@@ -49,15 +51,35 @@ class UpdateProfileRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'name.required' => 'Nama wajib diisi.',
+            'name.required' =>
+                'Nama wajib diisi.',
 
-            'email.required' => 'Email wajib diisi.',
-            'email.email' => 'Format email tidak valid.',
-            'email.unique' => 'Email sudah digunakan.',
+            'name.string' =>
+                'Nama harus berupa teks.',
 
-            'avatar.image' => 'File avatar harus berupa gambar.',
-            'avatar.mimes' => 'Avatar hanya boleh berupa JPG, JPEG, PNG, atau WEBP.',
-            'avatar.max' => 'Ukuran avatar maksimal 2 MB.',
+            'name.max' =>
+                'Nama maksimal 255 karakter.',
+
+            'email.required' =>
+                'Email wajib diisi.',
+
+            'email.email' =>
+                'Format email tidak valid.',
+
+            'email.max' =>
+                'Email maksimal 255 karakter.',
+
+            'email.unique' =>
+                'Email sudah digunakan.',
+
+            'avatar.file' =>
+                'Avatar harus berupa file.',
+
+            'avatar.mimes' =>
+                'Avatar hanya boleh berupa JPG, JPEG, PNG, atau WEBP.',
+
+            'avatar.max' =>
+                'Ukuran avatar maksimal 2 MB.',
         ];
     }
 }

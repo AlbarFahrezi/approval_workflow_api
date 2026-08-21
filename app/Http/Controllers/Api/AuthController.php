@@ -36,10 +36,26 @@ class AuthController extends Controller
      *         required=true,
      *         @OA\JsonContent(
      *             required={"name","email","password","password_confirmation"},
-     *             @OA\Property(property="name", type="string", example="Albar"),
-     *             @OA\Property(property="email", type="string", example="albar@gmail.com"),
-     *             @OA\Property(property="password", type="string", example="password"),
-     *             @OA\Property(property="password_confirmation", type="string", example="password")
+     *             @OA\Property(
+     *                 property="name",
+     *                 type="string",
+     *                 example="Albar"
+     *             ),
+     *             @OA\Property(
+     *                 property="email",
+     *                 type="string",
+     *                 example="albar@gmail.com"
+     *             ),
+     *             @OA\Property(
+     *                 property="password",
+     *                 type="string",
+     *                 example="password"
+     *             ),
+     *             @OA\Property(
+     *                 property="password_confirmation",
+     *                 type="string",
+     *                 example="password"
+     *             )
      *         )
      *     ),
      *
@@ -56,11 +72,15 @@ class AuthController extends Controller
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
+            'password' => Hash::make(
+                $validated['password']
+            ),
             'role' => 'employee',
         ]);
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $token = $user
+            ->createToken('auth_token')
+            ->plainTextToken;
 
         return $this->success(
             'Register berhasil.',
@@ -84,8 +104,16 @@ class AuthController extends Controller
      *         required=true,
      *         @OA\JsonContent(
      *             required={"email","password"},
-     *             @OA\Property(property="email", type="string", example="employee@example.com"),
-     *             @OA\Property(property="password", type="string", example="password")
+     *             @OA\Property(
+     *                 property="email",
+     *                 type="string",
+     *                 example="employee@example.com"
+     *             ),
+     *             @OA\Property(
+     *                 property="password",
+     *                 type="string",
+     *                 example="password"
+     *             )
      *         )
      *     ),
      *
@@ -99,9 +127,18 @@ class AuthController extends Controller
     {
         $validated = $request->validated();
 
-        $user = User::where('email', $validated['email'])->first();
+        $user = User::where(
+            'email',
+            $validated['email']
+        )->first();
 
-        if (!$user || !Hash::check($validated['password'], $user->password)) {
+        if (
+            !$user ||
+            !Hash::check(
+                $validated['password'],
+                $user->password
+            )
+        ) {
             return $this->error(
                 'Email atau password salah.',
                 null,
@@ -109,7 +146,9 @@ class AuthController extends Controller
             );
         }
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $token = $user
+            ->createToken('auth_token')
+            ->plainTextToken;
 
         return $this->success(
             'Login berhasil.',
@@ -137,9 +176,17 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        $token = $request
+            ->user()
+            ->currentAccessToken();
 
-        return $this->success('Logout berhasil.');
+        if ($token) {
+            $token->delete();
+        }
+
+        return $this->success(
+            'Logout berhasil.'
+        );
     }
 
     /**
@@ -160,6 +207,12 @@ class AuthController extends Controller
     public function profile(Request $request)
     {
         $user = $request->user();
+
+        $user->avatar_url = $user->avatar
+            ? asset(
+                'storage/' . $user->avatar
+            )
+            : null;
 
         return $this->success(
             'Data profile berhasil diambil.',
@@ -207,34 +260,49 @@ class AuthController extends Controller
      *     )
      * )
      */
-    public function updateProfile(UpdateProfileRequest $request)
-    {
+    public function updateProfile(
+        UpdateProfileRequest $request
+    ) {
         $user = $request->user();
 
         /*
         |--------------------------------------------------------------------------
-        | Update Name & Email
+        | UPDATE NAME & EMAIL
         |--------------------------------------------------------------------------
         */
 
-        $user->name = $request->name;
-        $user->email = $request->email;
+        $user->name = $request->input('name');
+        $user->email = $request->input('email');
 
         /*
         |--------------------------------------------------------------------------
-        | Upload Avatar
+        | UPLOAD AVATAR
         |--------------------------------------------------------------------------
         */
 
         if ($request->hasFile('avatar')) {
 
-            // Hapus foto lama jika ada
+            $avatar = $request->file('avatar');
+
+            /*
+            |------------------------------------------------------------------
+            | Hapus avatar lama
+            |------------------------------------------------------------------
+            */
+
             if ($user->avatar) {
-                Storage::disk('public')->delete($user->avatar);
+                Storage::disk('public')->delete(
+                    $user->avatar
+                );
             }
 
-            // Simpan foto baru
-            $avatarPath = $request->file('avatar')->store(
+            /*
+            |------------------------------------------------------------------
+            | Simpan avatar baru
+            |------------------------------------------------------------------
+            */
+
+            $avatarPath = $avatar->store(
                 'avatars',
                 'public'
             );
@@ -242,16 +310,24 @@ class AuthController extends Controller
             $user->avatar = $avatarPath;
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | SAVE USER
+        |--------------------------------------------------------------------------
+        */
+
         $user->save();
 
         /*
         |--------------------------------------------------------------------------
-        | Avatar URL
+        | AVATAR URL
         |--------------------------------------------------------------------------
         */
 
         $user->avatar_url = $user->avatar
-            ? asset('storage/' . $user->avatar)
+            ? asset(
+                'storage/' . $user->avatar
+            )
             : null;
 
         return $this->success(
@@ -293,11 +369,17 @@ class AuthController extends Controller
      *     )
      * )
      */
-    public function changePassword(ChangePasswordRequest $request)
-    {
+    public function changePassword(
+        ChangePasswordRequest $request
+    ) {
         $user = $request->user();
 
-        if (!Hash::check($request->current_password, $user->password)) {
+        if (
+            !Hash::check(
+                $request->current_password,
+                $user->password
+            )
+        ) {
             return $this->error(
                 'Password lama tidak sesuai.',
                 null,
@@ -306,7 +388,9 @@ class AuthController extends Controller
         }
 
         $user->update([
-            'password' => Hash::make($request->password),
+            'password' => Hash::make(
+                $request->password
+            ),
         ]);
 
         return $this->success(

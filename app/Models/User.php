@@ -39,6 +39,23 @@ class User extends Authenticatable
     }
 
     /**
+     * Attribute yang otomatis dikirim ke JSON.
+     */
+    protected $appends = [
+        'avatar_url',
+    ];
+
+    /**
+     * URL avatar user.
+     */
+    public function getAvatarUrlAttribute(): ?string
+    {
+        return $this->avatar
+            ? asset('storage/' . $this->avatar)
+            : null;
+    }
+
+    /**
      * User memiliki banyak Approval Request.
      */
     public function approvalRequests()
