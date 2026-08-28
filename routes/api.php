@@ -167,6 +167,17 @@ Route::middleware('auth:sanctum')->group(function () {
             [UserController::class, 'update']
         );
 
+        /*
+        |--------------------------------------------------------------------------
+        | Admin Reset User Password
+        |--------------------------------------------------------------------------
+        */
+
+        Route::put(
+            '/users/{user}/reset-password',
+            [UserController::class, 'resetPassword']
+        );
+
         Route::delete(
             '/users/{user}',
             [UserController::class, 'destroy']
