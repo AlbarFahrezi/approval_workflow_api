@@ -29,6 +29,24 @@ class ApprovalController extends Controller
      */
     public function submit(ApprovalRequest $approvalRequest)
     {
+        /*
+        |--------------------------------------------------------------------------
+        | Hanya request milik user yang boleh disubmit
+        |--------------------------------------------------------------------------
+        */
+
+        if ($approvalRequest->user_id !== auth()->id()) {
+            return response()->json([
+                'message' => 'Anda tidak memiliki akses untuk submit request ini.'
+            ], 403);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Hanya Draft yang boleh disubmit
+        |--------------------------------------------------------------------------
+        */
+
         if ($approvalRequest->status !== 'draft') {
             return response()->json([
                 'message' => 'Request sudah diproses dan tidak bisa disubmit lagi.'
@@ -88,6 +106,24 @@ class ApprovalController extends Controller
         ApprovalActionRequest $request,
         ApprovalRequest $approvalRequest
     ) {
+        /*
+        |--------------------------------------------------------------------------
+        | Hanya Manager yang boleh approve
+        |--------------------------------------------------------------------------
+        */
+
+        if (auth()->user()->role !== 'manager') {
+            return response()->json([
+                'message' => 'Hanya Manager yang dapat melakukan approval.'
+            ], 403);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Hanya Submitted yang boleh di-approve
+        |--------------------------------------------------------------------------
+        */
+
         if ($approvalRequest->status !== 'submitted') {
             return response()->json([
                 'message' => 'Hanya request yang berstatus submitted yang dapat di-approve.'
@@ -147,6 +183,24 @@ class ApprovalController extends Controller
         ApprovalActionRequest $request,
         ApprovalRequest $approvalRequest
     ) {
+        /*
+        |--------------------------------------------------------------------------
+        | Hanya Manager yang boleh reject
+        |--------------------------------------------------------------------------
+        */
+
+        if (auth()->user()->role !== 'manager') {
+            return response()->json([
+                'message' => 'Hanya Manager yang dapat melakukan approval.'
+            ], 403);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Hanya Submitted yang boleh di-reject
+        |--------------------------------------------------------------------------
+        */
+
         if ($approvalRequest->status !== 'submitted') {
             return response()->json([
                 'message' => 'Hanya request yang berstatus submitted yang dapat di-reject.'

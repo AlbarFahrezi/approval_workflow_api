@@ -14,7 +14,6 @@ use Illuminate\Http\Request;
  *     description="Approval Request Management"
  * )
  */
-
 class ApprovalRequestController extends Controller
 {
     use ApiResponse;
@@ -24,129 +23,146 @@ class ApprovalRequestController extends Controller
      */
 
     /**
- * @OA\Get(
- *     path="/api/approval-requests",
- *     tags={"Approval Requests"},
- *     summary="Get Approval Requests",
- *     description="Menampilkan daftar approval request.",
- *     security={{"sanctum":{}}},
- *
- *     @OA\Parameter(
- *         name="status",
- *         in="query",
- *         description="Filter status",
- *         @OA\Schema(type="string", example="submitted")
- *     ),
- *
- *     @OA\Parameter(
- *         name="search",
- *         in="query",
- *         description="Cari berdasarkan title",
- *         @OA\Schema(type="string", example="Laptop")
- *     ),
- *
- *     @OA\Parameter(
- *         name="sort",
- *         in="query",
- *         description="Sorting data",
- *         @OA\Schema(type="string", example="latest")
- *     ),
- *
- *     @OA\Parameter(
- *         name="per_page",
- *         in="query",
- *         description="Jumlah data per halaman",
- *         @OA\Schema(type="integer", example=10)
- *     ),
- *
- *     @OA\Response(
- *         response=200,
- *         description="Success"
- *     )
- * )
- */
+     * @OA\Get(
+     *     path="/api/approval-requests",
+     *     tags={"Approval Requests"},
+     *     summary="Get Approval Requests",
+     *     description="Menampilkan daftar approval request.",
+     *     security={{"sanctum":{}}},
+     *
+     *     @OA\Parameter(
+     *         name="status",
+     *         in="query",
+     *         description="Filter status",
+     *         @OA\Schema(type="string", example="submitted")
+     *     ),
+     *
+     *     @OA\Parameter(
+     *         name="search",
+     *         in="query",
+     *         description="Cari berdasarkan title",
+     *         @OA\Schema(type="string", example="Laptop")
+     *     ),
+     *
+     *     @OA\Parameter(
+     *         name="sort",
+     *         in="query",
+     *         description="Sorting data",
+     *         @OA\Schema(type="string", example="latest")
+     *     ),
+     *
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Jumlah data per halaman",
+     *         @OA\Schema(type="integer", example=10)
+     *     ),
+     *
+     *     @OA\Response(
+     *         response=200,
+     *         description="Success"
+     *     )
+     * )
+     */
     public function index(Request $request)
     {
         $user = $request->user();
+
         $query = ApprovalRequest::with('user');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Role Access
-    |--------------------------------------------------------------------------
-    */
+        /*
+        |--------------------------------------------------------------------------
+        | Role Access
+        |--------------------------------------------------------------------------
+        */
 
-    if ($user->role === 'employee') {
+        if ($user->role === 'employee') {
 
-        // Employee hanya melihat request miliknya
-        $query->where('user_id', $user->id);
+            /*
+            | Employee hanya melihat request miliknya
+            */
+            $query->where('user_id', $user->id);
 
-    } elseif ($user->role === 'manager') {
+        } elseif ($user->role === 'manager') {
 
-        // Manager melihat request yang sudah disubmit
-        
+            /*
+            | Manager hanya melihat request yang sudah submitted
+            |
+            | Draft milik Employee tidak akan muncul di dashboard Manager.
+            */
+            $query->where('status', 'submitted');
 
-    }
+        } elseif ($user->role === 'admin') {
 
-    // Admin melihat semua request
+            /*
+            | Admin dapat melihat semua request.
+            */
+        }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Filter Status
-    |--------------------------------------------------------------------------
-    */
+        /*
+        |--------------------------------------------------------------------------
+        | Filter Status
+        |--------------------------------------------------------------------------
+        */
 
-    if ($request->filled('status') && $request->status !== 'all') {
-        $query->where('status', $request->status);
-    }
+        if ($request->filled('status') && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Search
-    |--------------------------------------------------------------------------
-    */
+        /*
+        |--------------------------------------------------------------------------
+        | Search
+        |--------------------------------------------------------------------------
+        */
 
-    if ($request->filled('search')) {
-        $query->where(function ($q) use ($request) {
-            $q->where('title', 'like', '%' . $request->search . '%')
-              ->orWhere('description', 'like', '%' . $request->search . '%');
-        });
-    }
+        if ($request->filled('search')) {
+            $query->where(function ($q) use ($request) {
+                $q->where(
+                    'title',
+                    'like',
+                    '%' . $request->search . '%'
+                )->orWhere(
+                    'description',
+                    'like',
+                    '%' . $request->search . '%'
+                );
+            });
+        }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Filter User (Admin)
-    |--------------------------------------------------------------------------
-    */
+        /*
+        |--------------------------------------------------------------------------
+        | Filter User - Admin Only
+        |--------------------------------------------------------------------------
+        */
 
-    if (
-        $user->role === 'admin' &&
-        $request->filled('user_id')
-    ) {
-        $query->where('user_id', $request->user_id);
-    }
+        if (
+            $user->role === 'admin' &&
+            $request->filled('user_id')
+        ) {
+            $query->where('user_id', $request->user_id);
+        }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Sorting
-    |--------------------------------------------------------------------------
-    */
+        /*
+        |--------------------------------------------------------------------------
+        | Sorting
+        |--------------------------------------------------------------------------
+        */
 
-    if ($request->get('sort') === 'oldest') {
-        $query->oldest();
-    } else {
-        $query->latest();
-    }
+        if ($request->get('sort') === 'oldest') {
+            $query->oldest();
+        } else {
+            $query->latest();
+        }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Pagination
-    |--------------------------------------------------------------------------
-    */
+        /*
+        |--------------------------------------------------------------------------
+        | Pagination
+        |--------------------------------------------------------------------------
+        */
 
-    $approvalRequests = $query->paginate(
-        $request->get('per_page', 10)
-    );
+        $approvalRequests = $query->paginate(
+            $request->get('per_page', 10)
+        );
 
         return $this->success(
             'Data request berhasil diambil.',
@@ -159,28 +175,36 @@ class ApprovalRequestController extends Controller
      */
 
     /**
- * @OA\Post(
- *     path="/api/approval-requests",
- *     tags={"Approval Requests"},
- *     summary="Create Request",
- *     security={{"sanctum":{}}},
- *
- *     @OA\RequestBody(
- *         required=true,
- *         @OA\JsonContent(
- *             required={"title","description"},
- *
- *             @OA\Property(property="title", type="string", example="Pembelian Laptop"),
- *             @OA\Property(property="description", type="string", example="Laptop untuk divisi IT")
- *         )
- *     ),
- *
- *     @OA\Response(
- *         response=201,
- *         description="Request berhasil dibuat"
- *     )
- * )
- */
+     * @OA\Post(
+     *     path="/api/approval-requests",
+     *     tags={"Approval Requests"},
+     *     summary="Create Request",
+     *     security={{"sanctum":{}}},
+     *
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"title","description"},
+     *
+     *             @OA\Property(
+     *                 property="title",
+     *                 type="string",
+     *                 example="Pembelian Laptop"
+     *             ),
+     *             @OA\Property(
+     *                 property="description",
+     *                 type="string",
+     *                 example="Laptop untuk divisi IT"
+     *             )
+     *         )
+     *     ),
+     *
+     *     @OA\Response(
+     *         response=201,
+     *         description="Request berhasil dibuat"
+     *     )
+     * )
+     */
     public function store(StoreApprovalRequestRequest $request)
     {
         $approvalRequest = ApprovalRequest::create([
@@ -202,30 +226,40 @@ class ApprovalRequestController extends Controller
      */
 
     /**
- * @OA\Get(
- *     path="/api/approval-requests/{id}",
- *     tags={"Approval Requests"},
- *     summary="Detail Request",
- *     security={{"sanctum":{}}},
- *
- *     @OA\Parameter(
- *         name="id",
- *         in="path",
- *         required=true,
- *         @OA\Schema(type="integer")
- *     ),
- *
- *     @OA\Response(
- *         response=200,
- *         description="Success"
- *     )
- * )
- */
-    public function show(Request $request, ApprovalRequest $approvalRequest)
-    {
+     * @OA\Get(
+     *     path="/api/approval-requests/{id}",
+     *     tags={"Approval Requests"},
+     *     summary="Detail Request",
+     *     security={{"sanctum":{}}},
+     *
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *
+     *     @OA\Response(
+     *         response=200,
+     *         description="Success"
+     *     )
+     * )
+     */
+    public function show(
+        Request $request,
+        ApprovalRequest $approvalRequest
+    ) {
         $user = $request->user();
 
-        // Employee hanya boleh melihat request miliknya
+        /*
+        |--------------------------------------------------------------------------
+        | Employee Access
+        |--------------------------------------------------------------------------
+        |
+        | Employee hanya boleh melihat request miliknya.
+        |
+        */
+
         if (
             $user->role === 'employee' &&
             $approvalRequest->user_id !== $user->id
@@ -236,6 +270,37 @@ class ApprovalRequestController extends Controller
                 403
             );
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Manager Access
+        |--------------------------------------------------------------------------
+        |
+        | Manager hanya boleh melihat request yang sudah submitted.
+        |
+        | Draft milik Employee tidak boleh dibuka Manager.
+        |
+        */
+
+        if (
+            $user->role === 'manager' &&
+            $approvalRequest->status !== 'submitted'
+        ) {
+            return $this->error(
+                'Manager hanya dapat melihat request yang sudah disubmit.',
+                null,
+                403
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Admin
+        |--------------------------------------------------------------------------
+        |
+        | Admin dapat melihat semua request.
+        |
+        */
 
         return $this->success(
             'Detail request berhasil diambil.',
@@ -248,33 +313,39 @@ class ApprovalRequestController extends Controller
      */
 
     /**
- * @OA\Put(
- *     path="/api/approval-requests/{id}",
- *     tags={"Approval Requests"},
- *     summary="Update Request",
- *     security={{"sanctum":{}}},
- *
- *     @OA\Parameter(
- *         name="id",
- *         in="path",
- *         required=true,
- *         @OA\Schema(type="integer")
- *     ),
- *
- *     @OA\RequestBody(
- *         required=true,
- *         @OA\JsonContent(
- *             @OA\Property(property="title", type="string"),
- *             @OA\Property(property="description", type="string")
- *         )
- *     ),
- *
- *     @OA\Response(
- *         response=200,
- *         description="Updated"
- *     )
- * )
- */
+     * @OA\Put(
+     *     path="/api/approval-requests/{id}",
+     *     tags={"Approval Requests"},
+     *     summary="Update Request",
+     *     security={{"sanctum":{}}},
+     *
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(
+     *                 property="title",
+     *                 type="string"
+     *             ),
+     *             @OA\Property(
+     *                 property="description",
+     *                 type="string"
+     *             )
+     *         )
+     *     ),
+     *
+     *     @OA\Response(
+     *         response=200,
+     *         description="Updated"
+     *     )
+     * )
+     */
     public function update(
         UpdateApprovalRequestRequest $request,
         ApprovalRequest $approvalRequest
@@ -295,16 +366,13 @@ class ApprovalRequestController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Employee hanya boleh mengedit request miliknya
+        | Hanya Pemilik Request yang Boleh Edit
         |--------------------------------------------------------------------------
         */
 
-        if (
-            auth()->user()->role === 'employee' &&
-            $approvalRequest->user_id !== auth()->id()
-        ) {
+        if ($approvalRequest->user_id !== $request->user()->id) {
             return $this->error(
-                'Anda tidak memiliki akses.',
+                'Anda tidak memiliki akses ke request ini.',
                 null,
                 403
             );
@@ -332,70 +400,67 @@ class ApprovalRequestController extends Controller
      */
 
     /**
- * @OA\Delete(
- *     path="/api/approval-requests/{id}",
- *     tags={"Approval Requests"},
- *     summary="Delete Request",
- *     security={{"sanctum":{}}},
- *
- *     @OA\Parameter(
- *         name="id",
- *         in="path",
- *         required=true,
- *         @OA\Schema(type="integer")
- *     ),
- *
- *     @OA\Response(
- *         response=200,
- *         description="Deleted"
- *     )
- * )
- */
-   public function destroy(
-    Request $request,
-    ApprovalRequest $approvalRequest
-) {
-    /*
-    |--------------------------------------------------------------------------
-    | Hanya Draft yang boleh dihapus
-    |--------------------------------------------------------------------------
-    */
-
-    if ($approvalRequest->status !== 'draft') {
-        return $this->error(
-            'Request yang sudah disubmit tidak dapat dihapus.',
-            null,
-            403
-        );
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Employee hanya boleh menghapus request miliknya
-    |--------------------------------------------------------------------------
-    */
-
-    if (
-        $request->user()->role === 'employee' &&
-        $approvalRequest->user_id !== $request->user()->id
+     * @OA\Delete(
+     *     path="/api/approval-requests/{id}",
+     *     tags={"Approval Requests"},
+     *     summary="Delete Request",
+     *     security={{"sanctum":{}}},
+     *
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *
+     *     @OA\Response(
+     *         response=200,
+     *         description="Deleted"
+     *     )
+     * )
+     */
+    public function destroy(
+        Request $request,
+        ApprovalRequest $approvalRequest
     ) {
-        return $this->error(
-            'Anda tidak memiliki akses ke request ini.',
-            null,
-            403
+        /*
+        |--------------------------------------------------------------------------
+        | Hanya Draft yang boleh dihapus
+        |--------------------------------------------------------------------------
+        */
+
+        if ($approvalRequest->status !== 'draft') {
+            return $this->error(
+                'Request yang sudah disubmit tidak dapat dihapus.',
+                null,
+                403
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Hanya Pemilik Request yang Boleh Menghapus
+        |--------------------------------------------------------------------------
+        */
+
+        if ($approvalRequest->user_id !== $request->user()->id) {
+            return $this->error(
+                'Anda tidak memiliki akses ke request ini.',
+                null,
+                403
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Delete Request
+        |--------------------------------------------------------------------------
+        */
+
+        $approvalRequest->delete();
+
+        return $this->success(
+            'Request berhasil dihapus.'
         );
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Delete Request
-    |--------------------------------------------------------------------------
-    */
-
-    $approvalRequest->delete();
-
-    return $this->success(
-        'Request berhasil dihapus.'
-    );
-}
 }
