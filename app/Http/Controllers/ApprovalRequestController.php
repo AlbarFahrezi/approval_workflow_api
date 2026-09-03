@@ -284,10 +284,11 @@ class ApprovalRequestController extends Controller
 
         if (
             $user->role === 'manager' &&
-            $approvalRequest->status !== 'submitted'
+            $approvalRequest->status !== 'submitted' && 
+            $approvalRequest->user_id !== $user->id
         ) {
             return $this->error(
-                'Manager hanya dapat melihat request yang sudah disubmit.',
+                'Manager hanya dapat melihat request submitted atau draft miliknya sendiri.',
                 null,
                 403
             );
