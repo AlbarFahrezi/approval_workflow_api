@@ -79,16 +79,18 @@ class ApprovalRequestController extends Controller
         if ($user->role === 'employee') {
 
             /*
-            | Employee hanya melihat request miliknya
+            | Employee hanya melihat request miliknya sendiri.
             */
             $query->where('user_id', $user->id);
 
         } elseif ($user->role === 'manager') {
 
             /*
-            | Manager hanya melihat request yang sudah submitted
+            | Manager melihat request yang sudah submitted
+            | untuk diproses melalui approval.
             |
-            | Draft milik Employee tidak akan muncul di dashboard Manager.
+            | Draft milik Employee maupun draft milik Manager
+            | tidak ditampilkan pada daftar approval Manager.
             */
             $query->where('status', 'submitted');
 
@@ -256,7 +258,7 @@ class ApprovalRequestController extends Controller
         | Employee Access
         |--------------------------------------------------------------------------
         |
-        | Employee hanya boleh melihat request miliknya.
+        | Employee hanya boleh melihat request miliknya sendiri.
         |
         */
 
@@ -276,19 +278,23 @@ class ApprovalRequestController extends Controller
         | Manager Access
         |--------------------------------------------------------------------------
         |
-        | Manager hanya boleh melihat request yang sudah submitted.
+        | Manager dapat melihat:
         |
-        | Draft milik Employee tidak boleh dibuka Manager.
+        | 1. Draft miliknya sendiri
+        | 2. Request milik user lain yang sudah masuk proses approval
+        |    yaitu submitted, approved, atau rejected.
+        |
+        | Manager tidak dapat melihat draft milik user lain.
         |
         */
 
         if (
             $user->role === 'manager' &&
-            $approvalRequest->status !== 'submitted' && 
+            $approvalRequest->status === 'draft' &&
             $approvalRequest->user_id !== $user->id
         ) {
             return $this->error(
-                'Manager hanya dapat melihat request submitted atau draft miliknya sendiri.',
+                'Manager tidak dapat melihat draft milik user lain.',
                 null,
                 403
             );
@@ -454,7 +460,7 @@ class ApprovalRequestController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Delete Request
+        | Delete Data
         |--------------------------------------------------------------------------
         */
 
